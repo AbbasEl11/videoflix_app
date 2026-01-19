@@ -46,10 +46,12 @@ INSTALLED_APPS = [
     'django_rq',
     'video_app.apps.VideoAppConfig',
     'auth_app',
+    'debug_toolbar',
     
 ]
 
-MIDDLEWARE = [
+MIDDLEWARE = [    
+    'debug_toolbar.middleware.DebugToolbarMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -110,6 +112,7 @@ RQ_QUEUES = {
         'HOST': os.environ.get("REDIS_HOST", default="redis"),
         'PORT': os.environ.get("REDIS_PORT", default=6379),
         'DB': os.environ.get("REDIS_DB", default=0),
+        'PASSWORD': os.environ.get("REDIS_PASSWORD", default=None),
         'DEFAULT_TIMEOUT': 900,
         'REDIS_CLIENT_KWARGS': {},
     },
