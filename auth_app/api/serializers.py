@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from django.contrib.auth import authenticate
 from auth_app.models import UserModel
 import secrets
 
@@ -89,34 +90,26 @@ class ActivationSerializer(serializers.Serializer):
     message = serializers.CharField()
     
 
-class CookieTokenObtainPairSerializer(TokenObtainPairSerializer):
+class LoginSerializer(serializers.Serializer):
     """
-    Custom JWT serializer that includes user information in token response.
+    Serializer for user login.
     
-    Extends TokenObtainPairSerializer to add user data (id, username, email)
-    to the response payload for client-side use.
+    Validates email and password for authentication.
     """
-    @classmethod
-    def get_token(cls, user):
-        token = super().get_token(user)
-        return token
+    email = serializers.EmailField()
+    password = serializers.CharField(write_only=True)
 
     def validate(self, attrs):
-        """
-        Validate credentials and add user data to response.
+        email = attrs.get('email')
+        password = attrs.get('password')
+
+        user = authenticate(username=email, password=password)
         
-        Args:
-            attrs: Authentication credentials
-            
-        Returns:
-            dict: Token data with added user information
-        """
-        data = super().validate(attrs)
-        data['user'] = {
-            'id': self.user.id,
-            'username': self.user.email,
-            'email': self.user.email
-        }
-        return data
-    
-    
+        if not user:
+            raise serializers.ValidationError('Invalid email or password')
+        
+        if not user.is_active:
+            raise serializers.ValidationError('Account is not activated')
+        
+        attrs['user'] = user
+        return attrs
