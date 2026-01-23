@@ -2,33 +2,20 @@ from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
-from .serializers import RegistrationSerializer, LoginSerializer
+from .serializers import RegistrationSerializer, LoginSerializer, PasswordResetSerializer, PasswordConfirmSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
 import django_rq
 from django_rq import enqueue
-from .services import send_email, activate_user_account, create_jwt_tokens, clear_auth_cookies, set_auth_cookies, blacklist_refresh_token,create_access_token_from_refresh, get_refresh_token_from_cookies
+from .services import activate_user_account, create_jwt_tokens, clear_auth_cookies, set_auth_cookies, blacklist_refresh_token,create_access_token_from_refresh, get_refresh_token_from_cookies, create_password_reset, confirm_password_reset
+from .tasks import send_verification_email, send_password_reset_email
 from rest_framework import views
 from django.conf import settings
+from django.contrib.auth.models import User
 
 class RegistrationView(APIView):
-    """
-    API view for user registration.
-    
-    POST: Creates a new user account with username, email, and password.
-          Returns success message on successful registration.
-    """
     permission_classes = [AllowAny]
 
     def post(self, request):
-        """
-        Register a new user.
-        
-        Args:
-            request: HTTP request with username, email, password, confirmed_password
-            
-        Returns:
-            Response: Success message (201) or validation errors (400)
-        """
         serializer = RegistrationSerializer(data=request.data)
 
         if serializer.is_valid():
@@ -36,7 +23,7 @@ class RegistrationView(APIView):
             
             queue = django_rq.get_queue('high', autocommit=True)
             queue.enqueue(
-                send_email, instance.email, instance.usermodel.token, instance.usermodel.uidb64)
+                send_verification_email, instance.email, instance.usermodel.token, instance.usermodel.uidb64)
             
             return Response({
                 "user": {
@@ -50,26 +37,9 @@ class RegistrationView(APIView):
         
 
 class ActivationView(APIView):
-    """
-    API view for user account activation.
-    
-    GET: Activates user account using uidb64 and token from activation link.
-          Returns success message on successful activation.
-    """
     permission_classes = [AllowAny]
 
     def get(self, request, uidb64: str, token: str):
-        """
-        Activate user account.
-        
-        Args:
-            request: HTTP request
-            uidb64: Base64 encoded user ID
-            token: Activation token
-            
-        Returns:
-            Response: Success message (200) or error message (400)
-        """
         try:
             activate_user_account(uidb64, token)
             return Response({"message": "Account activated successfully!"}, status=status.HTTP_200_OK)
@@ -78,12 +48,6 @@ class ActivationView(APIView):
 
 
 class LoginView(TokenObtainPairView):
-    """
-    API view for user login with JWT tokens stored in HTTP-only cookies.
-    
-    POST: Authenticates user and returns access/refresh tokens in secure cookies.
-          Also returns user information (id, username, email) in response body.
-    """
     permission_classes = [AllowAny]
 
     def post(self, request, *args, **kwargs):
@@ -104,12 +68,6 @@ class LoginView(TokenObtainPairView):
     
 
 class LogoutView(APIView):
-    """
-    API view for user logout with token blacklisting.
-    
-    POST: Blacklists the refresh token and deletes both access and refresh cookies.
-          Requires authentication via access token.
-    """
     permission_classes = [AllowAny]
 
     def post(self, request):
@@ -129,12 +87,6 @@ class LogoutView(APIView):
         return res
 
 class CookieRefreshView(views.APIView):
-    """
-    API view for refreshing JWT access token using refresh token from cookies.
-    
-    POST: Validates refresh token from cookie and issues new access token.
-          Updates access_token cookie with new token.
-    """
     permission_classes = [AllowAny]
 
     def post(self, request, *args, **kwargs):
@@ -157,3 +109,54 @@ class CookieRefreshView(views.APIView):
         
         get_refresh_token_from_cookies(response, new_access_token)
         return response
+
+
+class PasswordResetView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = PasswordResetSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        email = serializer.validated_data['email']
+        
+        try:
+            user = User.objects.get(email=email)
+            uidb64, token = create_password_reset(user)
+            
+            queue = django_rq.get_queue('high', autocommit=True)
+            queue.enqueue(send_password_reset_email, email, token, uidb64)
+            
+        except User.DoesNotExist:
+            pass
+        
+        return Response(
+            {"detail": "An email has been sent to reset your password."},
+            status=status.HTTP_200_OK
+        )
+
+
+class PasswordConfirmView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request, uidb64, token):
+        serializer = PasswordConfirmSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        new_password = serializer.validated_data['new_password']
+        
+        try:
+            confirm_password_reset(uidb64, token, new_password)
+        except Exception:        
+            return Response(
+            {"error": "Invalid password reset link."},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+        
+        return Response(
+                {"detail": "Password has been successfully reset."},
+                status=status.HTTP_200_OK
+            )
+            
+
+    

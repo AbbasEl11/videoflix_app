@@ -1,39 +1,8 @@
-from django.core.mail import send_mail
+import secrets
 from django.conf import settings
-from django.template.loader import render_to_string
-from django.utils.html import strip_tags
 from auth_app.models import UserModel
 from rest_framework_simplejwt.tokens import RefreshToken
-
-def send_email(to_email: str, token: str, uidb64: str):
-    subject = 'Welcome to Videoflix!'
-    from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', None) or getattr(settings, 'EMAIL_HOST_USER', None)
-
-    frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:5500')   
-    verify_url = f"{frontend_url}/pages/auth/activate.html?uid={uidb64}&token={token}"
-
-    html = render_to_string(
-        "verify_email.html",
-        {
-            "subject": subject,
-            "preheader": "Please verify your email address to activate your account.",
-            "app_name": getattr(settings, "APP_NAME", None) or "Videoflix",
-            "logo_url": getattr(settings, "EMAIL_LOGO_URL", None),
-            "verify_url": verify_url,
-            "year": getattr(settings, "EMAIL_YEAR", None),
-        },
-    )
-
-    text = strip_tags(html)
-
-    send_mail(
-        subject=subject,
-        message=text,
-        from_email=from_email,
-        recipient_list=[to_email],
-        html_message=html,
-        fail_silently=False,
-    )
+from django.contrib.auth.models import User
 
 def activate_user_account(uidb64: str, token: str):
     if not uidb64 or not token:
@@ -144,3 +113,30 @@ def get_refresh_token_from_cookies(response, access_token: str):
     )
 
     return response
+
+
+def create_password_reset(user: User):
+    token = secrets.token_urlsafe(20)
+
+    obj, created = UserModel.objects.get_or_create(user=user)
+    obj.token = token
+    obj.save()
+
+    uidb64 = str(obj.uidb64)
+    
+    return uidb64, token
+
+
+def confirm_password_reset(uidb64: str, token: str, new_password: str):
+    try:
+        user_model = UserModel.objects.select_related('user').get(uidb64=uidb64, token=token)
+    except UserModel.DoesNotExist:
+        raise ValueError("Invalid password reset link")
+
+    user = user_model.user
+    user.set_password(new_password)
+    user.save(update_fields=['password'])
+    
+    user_model.delete()
+
+    

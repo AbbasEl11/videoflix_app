@@ -1,18 +1,11 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth import authenticate
 from auth_app.models import UserModel
 import secrets
 
 
 class RegistrationSerializer(serializers.ModelSerializer):
-    """
-    Serializer for user registration.
-    
-    Handles user creation with password confirmation and email uniqueness validation.
-    Passwords are hashed before saving to database.
-    """
     confirmed_password = serializers.CharField(write_only=True)
 
     class Meta:
@@ -28,47 +21,17 @@ class RegistrationSerializer(serializers.ModelSerializer):
         }
 
     def validate_confirmed_password(self, value):
-        """
-        Validate that password and confirmed_password match.
-        
-        Args:
-            value: Confirmed password value
-            
-        Returns:
-            str: Validated password
-            
-        Raises:
-            ValidationError: If passwords don't match
-        """
         password = self.initial_data.get('password')
         if password and value and password != value:
             raise serializers.ValidationError('Passwords do not match')
         return value
 
     def validate_email(self, value):
-        """
-        Validate that email is unique.
-        
-        Args:
-            value: Email address
-            
-        Returns:
-            str: Validated email
-            
-        Raises:
-            ValidationError: If email already exists
-        """
         if User.objects.filter(email=value).exists():
             raise serializers.ValidationError('Email already exists')
         return value
 
     def save(self):
-        """
-        Create and save new user with hashed password.
-        
-        Returns:
-            User: Newly created user instance
-        """
         pw = self.validated_data['password']
 
         account = User(email=self.validated_data['email'], username=self.validated_data['email'])
@@ -82,20 +45,10 @@ class RegistrationSerializer(serializers.ModelSerializer):
 
 
 class ActivationSerializer(serializers.Serializer):
-    """
-    Serializer for account activation.
-    
-    Validates the activation token and user ID.
-    """
     message = serializers.CharField()
     
 
 class LoginSerializer(serializers.Serializer):
-    """
-    Serializer for user login.
-    
-    Validates email and password for authentication.
-    """
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
 
@@ -112,4 +65,22 @@ class LoginSerializer(serializers.Serializer):
             raise serializers.ValidationError('Account is not activated')
         
         attrs['user'] = user
+        return attrs
+
+
+class PasswordResetSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+
+class PasswordConfirmSerializer(serializers.Serializer):
+    new_password = serializers.CharField()
+    confirm_password = serializers.CharField()
+
+    def validate(self, attrs):
+        new_password = attrs.get('new_password')
+        confirm_password = attrs.get('confirm_password')
+
+        if new_password != confirm_password:
+            raise serializers.ValidationError('Passwords do not match')
+        
         return attrs
