@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',
     'django_rq',
     'auth_app',
+    'video_app.apps.VideoAppConfig',
     
 ]
 
@@ -113,7 +114,6 @@ RQ_QUEUES = {
         'HOST': os.environ.get("REDIS_HOST", default="redis"),
         'PORT': os.environ.get("REDIS_PORT", default=6379),
         'DB': os.environ.get("REDIS_DB", default=0),
-        'PASSWORD': os.environ.get("REDIS_PASSWORD", default=None),
         'DEFAULT_TIMEOUT': 900,
         'REDIS_CLIENT_KWARGS': {},
     },

@@ -24,7 +24,15 @@ services:
       dockerfile: backend.Dockerfile
     env_file: .env
     container_name: videoflix_backend
-
+    deploy:
+      resources:
+        limits:
+          cpus: '8'
+          memory: 16G
+        reservations:
+          memory: 8G
+    
+    
     volumes:
       - .:/app
       - videoflix_media:/app/media
