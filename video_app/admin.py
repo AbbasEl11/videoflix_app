@@ -16,7 +16,7 @@ class VideoAdmin(admin.ModelAdmin):
             'fields': ('title', 'description', 'category')
         }),
         ('Dateien', {
-            'fields': ('video_file', 'thumbnail_url')
+            'fields': ('video_file', 'thumbnail')
         }),
         ('Zeitstempel', {
             'fields': ('created_at',),
@@ -25,6 +25,6 @@ class VideoAdmin(admin.ModelAdmin):
     )
     
     def has_thumbnail(self, obj):
-        return bool(obj.thumbnail_url)
+        return bool(obj.thumbnail)
     has_thumbnail.boolean = True
     has_thumbnail.short_description = 'Thumbnail'

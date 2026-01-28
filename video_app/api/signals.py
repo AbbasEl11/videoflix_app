@@ -1,7 +1,7 @@
 from video_app.models import Video
 from django.dispatch import receiver
 from django.db.models.signals import post_save, post_delete
-from .tasks import process_video_to_hls
+from .tasks import process_video_to_hls, generate_thumbnail_for_video
 import django_rq, os, shutil
 from django.conf import settings
 
@@ -13,6 +13,7 @@ def video_post_save(sender, instance, created, **kwargs):
 
         queue = django_rq.get_queue('default', autocommit=True)
         queue.enqueue(process_video_to_hls, video_id= instance.id)
+        queue.enqueue(generate_thumbnail_for_video, instance, instance.video_file.path)
 
 @receiver(post_delete, sender=Video)
 def video_post_delete(sender, instance, **kwargs):
@@ -25,10 +26,10 @@ def video_post_delete(sender, instance, **kwargs):
         except Exception:
             pass
 
-    if getattr(instance, "thumbnail_url", None) and instance.thumbnail_url:
+    if getattr(instance, "thumbnail", None) and instance.thumbnail:
         try: 
-            if os.path.exists(instance.thumbnail_url.path):
-                os.remove(instance.thumbnail_url.path)
+            if os.path.exists(instance.thumbnail.path):
+                os.remove(instance.thumbnail.path)
         except Exception:
             pass
 

@@ -3,11 +3,11 @@ import os, subprocess, django_rq
 from pathlib import Path
 
 from django.conf import settings
+from django.core.files import File
 from ..models import Video
 
 
 HLS_VARIANTS = [
-    {"name": "360p", "height": 360, "v_bitrate": "800k", "maxrate": "856k", "bufsize": "1200k", "bandwidth": 900000},
     {"name": "480p", "height": 480, "v_bitrate": "1400k", "maxrate": "1498k", "bufsize": "2100k", "bandwidth": 1600000},
     {"name": "720p", "height": 720, "v_bitrate": "2800k", "maxrate": "2996k", "bufsize": "4200k", "bandwidth": 3200000},
     {"name": "1080p", "height": 1080, "v_bitrate": "5000k", "maxrate": "5350k", "bufsize": "7500k", "bandwidth": 5800000},
@@ -187,3 +187,29 @@ def run_ffmpeg(cmd: list):
     p = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=os.environ.copy())
     if p.returncode != 0:
         raise RuntimeError(f"ffmpeg failed: (code {p.returncode}) {p.stderr}")
+    
+
+def generate_thumbnail_for_video(video: Video, input_path:Path):
+    if video.thumbnail:
+        return
+    
+    thumbnails_dir = Path(getattr(settings, 'MEDIA_ROOT')) / 'thumbnails'
+    thumbnails_dir.mkdir(parents=True, exist_ok=True)
+    thumb_filename = f"video_{video.id}.jpg"
+    thumbnail_path = thumbnails_dir / thumb_filename
+
+    cmd = [
+        "ffmpeg",
+        "-y",
+        "-ss", "00:00:01",
+        "-i", str(input_path),
+        "-vframes", "1",
+        "-vf", "scale=640:-2",
+        "-q:v", "2",
+        str(thumbnail_path)
+    ]
+
+    run_ffmpeg(cmd)
+
+    video.thumbnail.name = f'thumbnails/{thumb_filename}'
+    video.save(update_fields=['thumbnail'])
