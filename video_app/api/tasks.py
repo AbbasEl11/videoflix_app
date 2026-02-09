@@ -14,6 +14,15 @@ HLS_VARIANTS = [
 ]
 
 def process_video_to_hls(video_id: int):
+    """
+    Main task to process a video into HLS format with multiple quality variants.
+    
+    Args:
+        video_id: Primary key of the video to process
+        
+    Returns:
+        dict: Information about enqueued variants
+    """
     video = Video.objects.get(id=video_id)
     input_path = Path(video.video_file.path)
 
@@ -24,7 +33,6 @@ def process_video_to_hls(video_id: int):
 
     jobs = []
 
-
     for v in HLS_VARIANTS:
         job = queue.enqueue(
             process_single_variant,
@@ -34,7 +42,6 @@ def process_video_to_hls(video_id: int):
             variant_config=v
         )
         jobs.append(job)
-        print(f"Enqueued {v['name']} for video ID {video.id}: {job.id}")
 
     queue.enqueue(
         create_master_playlist,
@@ -51,9 +58,18 @@ def process_single_variant(
     output_root: str,
     variant_config: dict
 ):
-
-    print(f"Processing {variant_config['name']} for video {video_id}...")
+    """
+    Process a single video quality variant for HLS streaming.
     
+    Args:
+        video_id: Video ID being processed
+        input_path: Path to the source video file
+        output_root: Root directory for HLS output
+        variant_config: Dictionary containing variant configuration (name, height, bitrate, etc.)
+        
+    Returns:
+        dict: Information about the processed variant
+    """
     variant_dir = Path(output_root) / variant_config["name"]
     variant_dir.mkdir(parents=True, exist_ok=True)
 
@@ -66,8 +82,6 @@ def process_single_variant(
         bufsize=variant_config["bufsize"]
     )
 
-    print(f"Completed {variant_config['name']} for video {video_id}")
-    
     return {
         "name": variant_config["name"],
         "height": variant_config["height"],
@@ -77,9 +91,16 @@ def process_single_variant(
 
 
 def create_master_playlist(video_id: int, output_root: str):
-
-    print(f"Creating master playlist for video {video_id}...")
+    """
+    Create a master HLS playlist that references all available quality variants.
     
+    Args:
+        video_id: Video ID for which to create the master playlist
+        output_root: Root directory containing variant playlists
+        
+    Returns:
+        dict: Master playlist information including path and variants
+    """
     output_root_path = Path(output_root)
     created_variants = []
     
@@ -97,8 +118,6 @@ def create_master_playlist(video_id: int, output_root: str):
     
     master_path = write_master_playlist(output_root_path, created_variants)
     
-    print(f"Master playlist created for video {video_id}: {master_path}")
-    
     return {
         "video_id": video_id,
         "master_playlist": str(master_path),
@@ -114,7 +133,21 @@ def transcode_variant_to_hls(
     bufsize: str,
     hls_time: int = 4
 ):
-
+    """
+    Transcode video to HLS format for a specific quality variant using FFmpeg.
+    
+    Args:
+        input_path: Source video file path
+        output_dir: Output directory for HLS files
+        height: Video height in pixels
+        v_bitrate: Video bitrate (e.g., '1400k')
+        maxrate: Maximum bitrate for rate control
+        bufsize: Buffer size for encoding
+        hls_time: Segment duration in seconds (default: 4)
+        
+    Returns:
+        str: Path to the generated playlist file
+    """
     variant_playlist = output_dir / "index.m3u8"
     segment_pattern = output_dir / "seg_%05d.ts"
 
@@ -172,6 +205,16 @@ def transcode_variant_to_hls(
     return str(variant_playlist)
 
 def write_master_playlist(output_root: Path, variants: list):
+    """
+    Write the master HLS playlist file that indexes all quality variants.
+    
+    Args:
+        output_root: Root directory for the master playlist
+        variants: List of variant dictionaries with bandwidth, height, and playlist path
+        
+    Returns:
+        str: Path to the created master playlist file
+    """
     master_path = output_root / "master.m3u8"
 
     lines = ["#EXTM3U", "#EXT-X-VERSION:3"]
@@ -184,12 +227,28 @@ def write_master_playlist(output_root: Path, variants: list):
     return str(master_path)
 
 def run_ffmpeg(cmd: list):
+    """
+    Execute an FFmpeg command and handle errors.
+    
+    Args:
+        cmd: List of command arguments for FFmpeg
+        
+    Raises:
+        RuntimeError: If FFmpeg execution fails
+    """
     p = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=os.environ.copy())
     if p.returncode != 0:
         raise RuntimeError(f"ffmpeg failed: (code {p.returncode}) {p.stderr}")
     
 
 def generate_thumbnail_for_video(video: Video, input_path:Path):
+    """
+    Generate a thumbnail image from the video at 1 second mark.
+    
+    Args:
+        video: Video model instance
+        input_path: Path to the source video file
+    """
     if video.thumbnail:
         return
     

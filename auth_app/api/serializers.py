@@ -6,6 +6,9 @@ import secrets
 
 
 class RegistrationSerializer(serializers.ModelSerializer):
+    """
+    Serializer for user registration with email and password confirmation.
+    """
     confirmed_password = serializers.CharField(write_only=True)
 
     class Meta:
@@ -45,10 +48,15 @@ class RegistrationSerializer(serializers.ModelSerializer):
 
 
 class ActivationSerializer(serializers.Serializer):
+    """
+    Serializer for account activation response.
+    """
     message = serializers.CharField()
     
 
 class LoginSerializer(serializers.Serializer):
+    """    Serializer for user login validation.
+    """
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
 
@@ -69,10 +77,16 @@ class LoginSerializer(serializers.Serializer):
 
 
 class PasswordResetSerializer(serializers.Serializer):
+    """
+    Serializer for password reset request.
+    """
     email = serializers.EmailField()
 
 
 class PasswordConfirmSerializer(serializers.Serializer):
+    """
+    Serializer for password reset confirmation with password matching validation.
+    """
     new_password = serializers.CharField()
     confirm_password = serializers.CharField()
 

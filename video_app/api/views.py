@@ -8,6 +8,9 @@ from .utils import get_hls_playlist_path, get_hls_segment_path
 
 
 class VideoListView(ListAPIView):
+    """
+    API view for listing all videos with authentication required.
+    """
     permission_classes = [IsAuthenticated]
     serializer_class = VideoListSerializer
 
@@ -20,6 +23,9 @@ class VideoListView(ListAPIView):
         return ctx
 
 class VideoPlayListView(APIView):
+    """
+    API view for serving HLS playlist files for a specific video and resolution.
+    """
     permission_classes = [IsAuthenticated]
 
     def get(self, request, movie_id: int, resolution: str):
@@ -36,6 +42,9 @@ class VideoPlayListView(APIView):
         return response
     
 class VideoHlsSegmentView(APIView):
+    """
+    API view for serving HLS video segments.
+    """
     permission_classes = [IsAuthenticated]
 
     def get(self, request, movie_id: int, resolution: str, segment: str):

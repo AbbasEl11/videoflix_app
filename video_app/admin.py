@@ -4,6 +4,9 @@ from .models import Video
 
 @admin.register(Video)
 class VideoAdmin(admin.ModelAdmin):
+    """
+    Admin interface for Video model with enhanced display and filtering options.
+    """
     list_display = ('title', 'category', 'created_at', 'has_thumbnail')
     list_filter = ('category', 'created_at')
     search_fields = ('title', 'description', 'category')

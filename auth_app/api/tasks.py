@@ -5,6 +5,14 @@ from django.utils.html import strip_tags
 
 
 def send_verification_email(to_email: str, token: str, uidb64: str):
+    """
+    Send account verification email with activation link.
+    
+    Args:
+        to_email: Recipient email address
+        token: Verification token
+        uidb64: Unique base64-encoded user identifier
+    """
     subject = 'Welcome to Videoflix!'
     from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', None) or getattr(settings, 'EMAIL_HOST_USER', None)
 
@@ -36,7 +44,14 @@ def send_verification_email(to_email: str, token: str, uidb64: str):
 
 
 def send_password_reset_email(to_email: str, token: str, uidb64: str):
-    print( uidb64, token )
+    """
+    Send password reset email with reset link.
+    
+    Args:
+        to_email: Recipient email address
+        token: Password reset token
+        uidb64: Unique base64-encoded user identifier
+    """
     subject = 'Reset your Videoflix password'
     from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', None) or getattr(settings, 'EMAIL_HOST_USER', None)
 

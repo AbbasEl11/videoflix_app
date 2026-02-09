@@ -5,6 +5,9 @@ from .models import UserModel
 
 
 class UserModelInline(admin.StackedInline):
+    """
+    Inline admin for displaying UserModel data within User admin.
+    """
     model = UserModel
     can_delete = False
     verbose_name_plural = 'Benutzer Profil'
@@ -12,6 +15,9 @@ class UserModelInline(admin.StackedInline):
 
 
 class UserAdmin(BaseUserAdmin):
+    """
+    Custom User admin with UserModel inline.
+    """
     inlines = (UserModelInline,)
     list_display = ('username', 'email', 'first_name', 'last_name', 'is_staff', 'is_active', 'date_joined')
     list_filter = ('is_staff', 'is_superuser', 'is_active', 'date_joined')
@@ -26,6 +32,9 @@ admin.site.register(User, UserAdmin)
 
 @admin.register(UserModel)
 class UserModelAdmin(admin.ModelAdmin):
+    """
+    Admin interface for UserModel with verification details.
+    """
     list_display = ('user', 'uidb64', 'get_email', 'get_is_active')
     list_filter = ('user__is_active',)
     search_fields = ('user__username', 'user__email', 'token', 'uidb64')

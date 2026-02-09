@@ -1,8 +1,10 @@
 from django.db import models
 
-# Create your models here.
 
 class Video(models.Model):
+    """
+    Video model storing video metadata and file paths.
+    """
     title = models.CharField(max_length=200)
     description = models.TextField()
     video_file = models.FileField(upload_to='videos/')

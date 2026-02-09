@@ -7,16 +7,32 @@ from django.conf import settings
 
 @receiver(post_save, sender=Video)
 def video_post_save(sender, instance, created, **kwargs):
+    """
+    Signal handler triggered after a Video instance is saved.
+    Enqueues background tasks for video processing and thumbnail generation.
+    
+    Args:
+        sender: Model class (Video)
+        instance: Video instance that was saved
+        created: Boolean indicating if this is a new instance
+        **kwargs: Additional keyword arguments
+    """
     if created:
-        print("Video created, enqueueing processing task.")
-        print(f"Video ID: {instance.id}, Video Path: {instance.video_file.path}")
-
         queue = django_rq.get_queue('default', autocommit=True)
         queue.enqueue(process_video_to_hls, video_id= instance.id)
         queue.enqueue(generate_thumbnail_for_video, instance, instance.video_file.path)
 
 @receiver(post_delete, sender=Video)
 def video_post_delete(sender, instance, **kwargs):
+    """
+    Signal handler triggered after a Video instance is deleted.
+    Removes associated video files, thumbnails, and HLS directories.
+    
+    Args:
+        sender: Model class (Video)
+        instance: Video instance that was deleted
+        **kwargs: Additional keyword arguments
+    """
     video_id = instance.id
 
     if getattr(instance, "video_file", None) and instance.video_file:
