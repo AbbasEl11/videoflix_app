@@ -41,7 +41,7 @@
 **1. Clone the repository**
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/AbbasEl11/videoflix_app
 cd videoflix_app
 ```
 
