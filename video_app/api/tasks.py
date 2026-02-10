@@ -265,16 +265,19 @@ def generate_thumbnail_for_video(video_id, input_path):
 
     cmd = [
         "ffmpeg",
-        "-y",
         "-ss", "00:00:01",
         "-i", str(input_path),
-        "-vframes", "1",
+        "-frames:v", "1",
         "-vf", "scale=640:-2",
         "-q:v", "2",
         str(thumbnail_path)
     ]
 
-    run_ffmpeg(cmd)
-
-    video.thumbnail.name = f'thumbnails/{thumb_filename}'
-    video.save(update_fields=['thumbnail'])
+    try:
+        run_ffmpeg(cmd)
+        video.thumbnail.name = f'thumbnails/{thumb_filename}'
+        video.save(update_fields=['thumbnail'])
+    except Exception as e:
+        if os.path.exists(thumbnail_path):
+            os.remove(thumbnail_path)
+        raise
