@@ -47,27 +47,49 @@ cd videoflix_app
 
 **2. Create environment file**
 
-```bash
-cp .env.example .env
+Create `.env` in project root (see `.env.template`):
+
+```env
+DJANGO_SUPERUSER_USERNAME=admin
+DJANGO_SUPERUSER_PASSWORD=adminpassword
+DJANGO_SUPERUSER_EMAIL=admin@example.com
+
+SECRET_KEY="your_secret_key_here"
+DEBUG=True
+ALLOWED_HOSTS=localhost,127.0.0.1
+CSRF_TRUSTED_ORIGINS=http://localhost:5500,http://127.0.0.1:5500
+
+DB_NAME=your_database_name
+DB_USER=your_database_user
+DB_PASSWORD=your_database_password
+DB_HOST=db
+DB_PORT=5432
+
+REDIS_HOST=redis
+REDIS_LOCATION=redis://redis:6379/1
+REDIS_PORT=6379
+REDIS_DB=0
+
+EMAIL_HOST=smtp.example.com
+EMAIL_PORT=587
+EMAIL_HOST_USER=your_email_user
+EMAIL_HOST_PASSWORD=your_email_user_password
+EMAIL_USE_TLS=True
+EMAIL_USE_SSL=False
+DEFAULT_FROM_EMAIL=default_from_email
 ```
 
-**3. Start services**
+**3. Build and start services**
 
 ```bash
-docker-compose up -d
+docker-compose up --build
 ```
 
-**4. Run migrations**
-
-```bash
-docker-compose exec web python manage.py migrate
-```
-
-**5. Create superuser**
-
-```bash
-docker-compose exec web python manage.py createsuperuser
-```
+The entrypoint automatically handles:
+- Database migrations
+- Superuser creation
+- Static files collection
+- RQ workers startup
 
 **Access**
 
@@ -169,8 +191,8 @@ pip install -r requirements.txt
 **2. Start services**
 
 ```bash
-# PostgreSQL and Redis required
-docker-compose up db redis -d
+# Start only PostgreSQL and Redis
+docker-compose up -d db redis
 ```
 
 **3. Configure environment**
@@ -197,20 +219,31 @@ python manage.py runserver
 
 ### Environment Variables
 
-| Variable | Description | Default |
+| Variable | Description | Example |
 |----------|-------------|---------|
-| `SECRET_KEY` | Django secret key | - |
-| `DB_NAME` | PostgreSQL database name | `videoflix_db` |
-| `DB_USER` | PostgreSQL user | `videoflix_user` |
-| `DB_PASSWORD` | PostgreSQL password | - |
+| `DJANGO_SUPERUSER_USERNAME` | Admin username | `admin` |
+| `DJANGO_SUPERUSER_PASSWORD` | Admin password | `adminpassword` |
+| `DJANGO_SUPERUSER_EMAIL` | Admin email | `admin@example.com` |
+| `SECRET_KEY` | Django secret key | `your_secret_key_here` |
+| `DEBUG` | Debug mode | `True` |
+| `ALLOWED_HOSTS` | Allowed hosts (comma-separated) | `localhost,127.0.0.1` |
+| `CSRF_TRUSTED_ORIGINS` | CSRF origins (comma-separated) | `http://localhost:5500` |
+| `DB_NAME` | PostgreSQL database name | `your_database_name` |
+| `DB_USER` | PostgreSQL user | `your_database_user` |
+| `DB_PASSWORD` | PostgreSQL password | `your_database_password` |
 | `DB_HOST` | Database host | `db` |
+| `DB_PORT` | Database port | `5432` |
 | `REDIS_HOST` | Redis host | `redis` |
-| `EMAIL_HOST` | SMTP server | - |
-| `EMAIL_HOST_USER` | SMTP username | - |
-| `EMAIL_HOST_PASSWORD` | SMTP password | - |
-| `FRONTEND_URL` | Frontend URL for email links | `http://localhost:4200` |
-| `ALLOWED_HOSTS` | Allowed hosts (comma-separated) | `localhost` |
-| `CSRF_TRUSTED_ORIGINS` | CSRF origins (comma-separated) | `http://localhost:4200` |
+| `REDIS_LOCATION` | Redis connection URL | `redis://redis:6379/1` |
+| `REDIS_PORT` | Redis port | `6379` |
+| `REDIS_DB` | Redis database number | `0` |
+| `EMAIL_HOST` | SMTP server | `smtp.example.com` |
+| `EMAIL_PORT` | SMTP port | `587` |
+| `EMAIL_HOST_USER` | SMTP username | `your_email_user` |
+| `EMAIL_HOST_PASSWORD` | SMTP password | `your_email_user_password` |
+| `EMAIL_USE_TLS` | Use TLS | `True` |
+| `EMAIL_USE_SSL` | Use SSL | `False` |
+| `DEFAULT_FROM_EMAIL` | Default sender email | `default_from_email` |
 
 ### Email Functionality
 
