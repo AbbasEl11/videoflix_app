@@ -6,7 +6,7 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from rest_framework import status, views, permissions, response
 
-from .serializers import RegistrationSerializer, LoginSerializer, PasswordResetSerializer
+from .serializers import RegistrationSerializer, LoginSerializer, PasswordResetSerializer, PasswordConfirmSerializer
 
 from .services import active_account, create_jwt_tokens, set_auth_cookies, clear_auth_cookies, blacklist_refresh_token, create_access_token_from_refresh, set_access_token, create_password_reset, confirm_password_reset
 from .tasks import send_verification_email
@@ -24,7 +24,7 @@ class RegistrationView(views.APIView):
             instance = serializer.save()
 
             queue = django_rq.get_queue('high', autocommit=True)
-            queue.enqueue(send_verification_email, instance.email, instance.UserModel.token, instance.UserModel.uidb64)
+            queue.enqueue(send_verification_email, instance.email, instance.usermodel.token, instance.usermodel.uidb64)
 
             return response.Response(
                 {
@@ -32,7 +32,7 @@ class RegistrationView(views.APIView):
                         "id": instance.id,
                         "email": instance.email
                     },
-                "token": instance.UserModel.token
+                "token": instance.usermodel.token
                 }, status=status.HTTP_201_CREATED)
         return response.Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
@@ -187,7 +187,7 @@ class PasswordResetConfirmView(views.APIView):
 
     def post(self, request, uidb64, token):
         """Confirm password reset with new password."""
-        serializer = PasswordResetSerializer(data=request.data)
+        serializer = PasswordConfirmSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         try:

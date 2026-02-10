@@ -241,14 +241,20 @@ def run_ffmpeg(cmd: list):
         raise RuntimeError(f"ffmpeg failed: (code {p.returncode}) {p.stderr}")
     
 
-def generate_thumbnail_for_video(video: Video, input_path:Path):
+def generate_thumbnail_for_video(video_id, input_path):
     """
     Generate a thumbnail image from the video at 1 second mark.
+    Skips generation if a thumbnail already exists.
     
     Args:
-        video: Video model instance
+        video_id: Video model instance or integer ID
         input_path: Path to the source video file
     """
+    if isinstance(video_id, Video):
+        video = video_id
+    else:
+        video = Video.objects.get(id=video_id)
+    
     if video.thumbnail:
         return
     

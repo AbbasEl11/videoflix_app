@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'django_rq',
     'auth_app',
     'video_app.apps.VideoAppConfig',
+    'django_cleanup.apps.CleanupConfig',  # Must be last!
 ]
 
 MIDDLEWARE = [

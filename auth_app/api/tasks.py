@@ -56,7 +56,7 @@ def send_password_reset_email(to_email: str, token: str, uidb64: str):
     from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', None) or getattr(settings, 'EMAIL_HOST_USER', None)
 
     frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:5500')
-    reset_url = f"{frontend_url}/pages/auth/password-reset.html?uid={uidb64}&token={token}"
+    reset_url = f"{frontend_url}/pages/auth/confirm_password.html?uid={uidb64}&token={token}"
 
     html = render_to_string(
         "password_reset_email.html",

@@ -49,7 +49,7 @@ class VideoHlsSegmentView(APIView):
 
     def get(self, request, movie_id: int, resolution: str, segment: str):
         try:
-            get_video_by_id(movie_id)
+            get_video_by_id(movie_id) 
         except Exception:
             raise Http404("Video not found")
         
